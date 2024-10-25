@@ -7,6 +7,12 @@
                 "except": ["first-nested"],
                 "ignoreComments": ["/rtl:.*/"]
             }
+        ],
+        "selector-max-specificity": [
+            "0,1,0",
+            {
+                "ignoreSelectors": ["/^::?/"]
+            }
         ]
     }
 }

@@ -1,15 +1,14 @@
 import type { ColumnModel } from '../columns/columnModel';
 import type { ColumnNameService } from '../columns/columnNameService';
-import type { FuncColsService } from '../columns/funcColsService';
 import type { NamedBean } from '../context/bean';
 import type { BeanCollection } from '../context/context';
 import type { CsvCustomContent, CsvExportParams } from '../interfaces/exportParams';
+import type { IColsService } from '../interfaces/iColsService';
 import type { ICsvCreator } from '../interfaces/iCsvCreator';
 import { _warn } from '../validation/logging';
 import type { ValueService } from '../valueService/valueService';
 import { BaseCreator } from './baseCreator';
 import { _downloadFile } from './downloader';
-import type { GridSerializer } from './gridSerializer';
 import { CsvSerializingSession } from './sessions/csvSerializingSession';
 
 export class CsvCreator
@@ -18,25 +17,16 @@ export class CsvCreator
 {
     beanName = 'csvCreator' as const;
 
-    private columnModel: ColumnModel;
-    private columnNameService: ColumnNameService;
-    private funcColsService: FuncColsService;
-    private valueService: ValueService;
-    private gridSerializer: GridSerializer;
+    private colModel: ColumnModel;
+    private colNames: ColumnNameService;
+    private rowGroupColsSvc?: IColsService;
+    private valueSvc: ValueService;
 
     public wireBeans(beans: BeanCollection): void {
-        this.columnModel = beans.columnModel;
-        this.columnNameService = beans.columnNameService;
-        this.funcColsService = beans.funcColsService;
-        this.valueService = beans.valueService;
-        this.gridSerializer = beans.gridSerializer as GridSerializer;
-    }
-
-    public postConstruct(): void {
-        this.setBeans({
-            gridSerializer: this.gridSerializer,
-            gos: this.gos,
-        });
+        this.colModel = beans.colModel;
+        this.colNames = beans.colNames;
+        this.rowGroupColsSvc = beans.rowGroupColsSvc;
+        this.valueSvc = beans.valueSvc;
     }
 
     protected getMergedParams(params?: CsvExportParams): CsvExportParams {
@@ -79,7 +69,7 @@ export class CsvCreator
     }
 
     public createSerializingSession(params?: CsvExportParams): CsvSerializingSession {
-        const { columnModel, columnNameService, funcColsService, valueService, gos } = this;
+        const { colModel, colNames, rowGroupColsSvc, valueSvc, gos } = this;
         const {
             processCellCallback,
             processHeaderCallback,
@@ -90,10 +80,9 @@ export class CsvCreator
         } = params!;
 
         return new CsvSerializingSession({
-            columnModel,
-            columnNameService,
-            funcColsService,
-            valueService,
+            colModel,
+            colNames,
+            valueSvc,
             gos,
             processCellCallback: processCellCallback || undefined,
             processHeaderCallback: processHeaderCallback || undefined,
@@ -101,6 +90,7 @@ export class CsvCreator
             processRowGroupCallback: processRowGroupCallback || undefined,
             suppressQuotes: suppressQuotes || false,
             columnSeparator: columnSeparator || ',',
+            rowGroupColsSvc,
         });
     }
 

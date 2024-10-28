@@ -1,8 +1,8 @@
 import type {
     AgColumn,
     AgEventType,
-    FuncColsService,
     GridOptionsService,
+    IColsService,
     IEventEmitter,
     IEventListener,
     RowNode,
@@ -41,8 +41,8 @@ export enum SetFilterModelValuesType {
 
 export interface SetValueModelParams<V> {
     gos: GridOptionsService;
-    funcColsService: FuncColsService;
-    valueService: ValueService;
+    rowGroupColsSvc?: IColsService;
+    valueSvc: ValueService;
     filterParams: SetFilterParams<any, V>;
     setIsLoading: (loading: boolean) => void;
     translate: (key: keyof ISetFilterLocaleText) => string;
@@ -110,8 +110,8 @@ export class SetValueModel<V> implements IEventEmitter<SetValueModelEvent> {
     constructor(params: SetValueModelParams<V>) {
         const {
             usingComplexObjects,
-            funcColsService,
-            valueService,
+            rowGroupColsSvc,
+            valueSvc,
             treeDataTreeList,
             groupingTreeList,
             filterParams,
@@ -158,16 +158,12 @@ export class SetValueModel<V> implements IEventEmitter<SetValueModelEvent> {
             this.entryComparator = this.createTreeDataOrGroupingComparator() as any;
         } else if (treeList && !treeListPathGetter && !keyComparator) {
             this.entryComparator = (
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 [_aKey, aValue]: [string | null, V | null],
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 [_bKey, bValue]: [string | null, V | null]
             ) => _defaultComparator(aValue, bValue);
         } else {
             this.entryComparator = (
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 [_aKey, aValue]: [string | null, V | null],
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 [_bKey, bValue]: [string | null, V | null]
             ) => keyComparator(aValue, bValue);
         }
@@ -182,13 +178,13 @@ export class SetValueModel<V> implements IEventEmitter<SetValueModelEvent> {
                 this.filterParams,
                 this.createKey,
                 this.caseFormat,
-                funcColsService,
-                valueService,
+                valueSvc,
                 treeDataOrGrouping,
                 !!treeDataTreeList,
                 getDataPath,
                 groupAllowUnbalanced,
-                addManagedEventListeners
+                addManagedEventListeners,
+                rowGroupColsSvc
             );
         }
 
@@ -209,12 +205,7 @@ export class SetValueModel<V> implements IEventEmitter<SetValueModelEvent> {
                   treeListFormatter,
                   treeDataTreeList || groupingTreeList
               )
-            : (new FlatSetDisplayValueModel<V>(
-                  valueService,
-                  valueFormatter,
-                  this.formatter,
-                  column as AgColumn
-              ) as any);
+            : (new FlatSetDisplayValueModel<V>(valueSvc, valueFormatter, this.formatter, column as AgColumn) as any);
 
         this.updateAllValues().then((updatedKeys) => this.resetSelectionState(updatedKeys || []));
     }
@@ -732,9 +723,7 @@ export class SetValueModel<V> implements IEventEmitter<SetValueModelEvent> {
         b: [string | null, string[] | null]
     ) => number {
         return (
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             [_aKey, aValue]: [string | null, string[] | null],
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             [_bKey, bValue]: [string | null, string[] | null]
         ) => {
             if (aValue == null) {

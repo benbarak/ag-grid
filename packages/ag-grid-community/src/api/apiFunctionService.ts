@@ -16,14 +16,14 @@ const defaultFns = {
     wireBeans() {},
 };
 
-const dispatchEvent = (beans: BeanCollection, event: AllEvents): void => beans.eventService.dispatchEvent(event);
+const dispatchEvent = (beans: BeanCollection, event: AllEvents): void => beans.eventSvc.dispatchEvent(event);
 
 // We use a class for AGGridApi so in stack traces calling grid.api.xxx() if an error is thrown it will print "GridApi.xxx"
 class GridApiClass {}
 Reflect.defineProperty(GridApiClass, 'name', { value: 'GridApi' });
 
 export class ApiFunctionService extends BeanStub implements NamedBean {
-    beanName = 'apiFunctionService' as const;
+    beanName = 'apiFunctionSvc' as const;
 
     public readonly api: GridApi = new GridApiClass() as GridApi;
 
@@ -36,8 +36,6 @@ export class ApiFunctionService extends BeanStub implements NamedBean {
         dispatchEvent,
     };
 
-    private beans: BeanCollection | null = null;
-
     private preDestroyLink: string = '';
 
     public constructor() {
@@ -49,12 +47,8 @@ export class ApiFunctionService extends BeanStub implements NamedBean {
         }
     }
 
-    public wireBeans(beans: BeanCollection): void {
-        this.beans = beans;
-    }
-
     public postConstruct(): void {
-        this.preDestroyLink = this.frameworkOverrides.getDocLink('grid-lifecycle/#grid-pre-destroyed');
+        this.preDestroyLink = this.beans.frameworkOverrides.getDocLink('grid-lifecycle/#grid-pre-destroyed');
     }
 
     public addFunction<TFunctionName extends ApiFunctionName>(
@@ -63,7 +57,7 @@ export class ApiFunctionService extends BeanStub implements NamedBean {
     ): void {
         const { fns, beans } = this;
         if (fns !== defaultFns) {
-            fns[functionName] = beans?.validationService?.validateApiFunction(functionName, func) ?? func;
+            fns[functionName] = beans?.validation?.validateApiFunction(functionName, func) ?? func;
         }
     }
 
@@ -98,6 +92,6 @@ export class ApiFunctionService extends BeanStub implements NamedBean {
     public override destroy(): void {
         super.destroy();
         this.fns = defaultFns;
-        this.beans = null;
+        (this.beans as any) = null;
     }
 }

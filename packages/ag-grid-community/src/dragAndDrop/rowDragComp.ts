@@ -1,5 +1,4 @@
 import { BeanStub } from '../context/beanStub';
-import type { BeanCollection } from '../context/context';
 import type { AgColumn } from '../entities/agColumn';
 import type { RowNode } from '../entities/rowNode';
 import type { AgEventType } from '../eventTypes';
@@ -11,12 +10,7 @@ import { DragSourceType } from './dragAndDropService';
 
 export class RowDragComp extends Component {
     private dragSource: DragSource | null = null;
-    private beans: BeanCollection;
     private mouseDownListener: (() => void) | undefined;
-
-    public wireBeans(beans: BeanCollection): void {
-        this.beans = beans;
-    }
 
     constructor(
         private readonly cellValueFn: () => string,
@@ -44,8 +38,8 @@ export class RowDragComp extends Component {
 
         if (!this.suppressVisibilityChange) {
             const strategy = this.gos.get('rowDragManaged')
-                ? new ManagedVisibilityStrategy(this, this.beans, this.rowNode, this.column)
-                : new NonManagedVisibilityStrategy(this, this.beans, this.rowNode, this.column);
+                ? new ManagedVisibilityStrategy(this, this.rowNode, this.column)
+                : new NonManagedVisibilityStrategy(this, this.rowNode, this.column);
 
             this.createManagedBean(strategy, this.beans.context);
         }
@@ -64,7 +58,7 @@ export class RowDragComp extends Component {
             return [this.rowNode];
         }
 
-        const selection = this.beans.selectionService?.getSelectedNodes() ?? [];
+        const selection = this.beans.selectionSvc?.getSelectedNodes() ?? [];
 
         return selection.indexOf(this.rowNode) !== -1 ? selection : [this.rowNode];
     }
@@ -129,7 +123,7 @@ export class RowDragComp extends Component {
             dragSourceDomDataKey: this.gos.getDomDataKey(),
         };
 
-        this.beans.dragAndDropService!.addDragSource(this.dragSource, true);
+        this.beans.dragAndDrop!.addDragSource(this.dragSource, true);
     }
 
     public override destroy(): void {
@@ -143,7 +137,7 @@ export class RowDragComp extends Component {
             return;
         }
 
-        this.beans.dragAndDropService!.removeDragSource(this.dragSource);
+        this.beans.dragAndDrop!.removeDragSource(this.dragSource);
         this.dragSource = null;
     }
 
@@ -198,11 +192,8 @@ class VisibilityStrategy extends BeanStub {
 
 // when non managed, the visibility depends on suppressRowDrag property only
 class NonManagedVisibilityStrategy extends VisibilityStrategy {
-    private readonly beans: BeanCollection;
-
-    constructor(parent: RowDragComp, beans: BeanCollection, rowNode: RowNode, column?: AgColumn) {
+    constructor(parent: RowDragComp, rowNode: RowNode, column?: AgColumn) {
         super(parent, rowNode, column);
-        this.beans = beans;
     }
 
     public postConstruct(): void {
@@ -215,7 +206,7 @@ class NonManagedVisibilityStrategy extends VisibilityStrategy {
             cellChanged: listener,
         });
 
-        this.addManagedListeners(this.beans.eventService, { newColumnsLoaded: listener });
+        this.addManagedListeners(this.beans.eventSvc, { newColumnsLoaded: listener });
 
         this.workOutVisibility();
     }
@@ -233,17 +224,14 @@ class NonManagedVisibilityStrategy extends VisibilityStrategy {
 
 // when managed, the visibility depends on sort, filter and row group, as well as suppressRowDrag property
 class ManagedVisibilityStrategy extends VisibilityStrategy {
-    private readonly beans: BeanCollection;
-
-    constructor(parent: RowDragComp, beans: BeanCollection, rowNode: RowNode, column?: AgColumn) {
+    constructor(parent: RowDragComp, rowNode: RowNode, column?: AgColumn) {
         super(parent, rowNode, column);
-        this.beans = beans;
     }
 
     public postConstruct(): void {
         const listener = this.workOutVisibility.bind(this);
         // we do not show the component if sort, filter or grouping is active
-        this.addManagedListeners<AgEventType>(this.beans.eventService, {
+        this.addManagedListeners<AgEventType>(this.beans.eventSvc, {
             sortChanged: listener,
             filterChanged: listener,
             columnRowGroupChanged: listener,
@@ -267,10 +255,10 @@ class ManagedVisibilityStrategy extends VisibilityStrategy {
 
     private workOutVisibility(): void {
         // only show the drag if both sort and filter are not present
-        const rowDragFeature = this.beans.rowDragService!.getRowDragFeature();
+        const rowDragFeature = this.beans.rowDragSvc!.getRowDragFeature();
         const shouldPreventRowMove = rowDragFeature && rowDragFeature.shouldPreventRowMove();
         const suppressRowDrag = this.gos.get('suppressRowDrag');
-        const hasExternalDropZones = this.beans.dragAndDropService!.hasExternalDropZones();
+        const hasExternalDropZones = this.beans.dragAndDrop!.hasExternalDropZones();
         const neverDisplayed = (shouldPreventRowMove && !hasExternalDropZones) || suppressRowDrag;
 
         this.setDisplayedOrVisible(neverDisplayed);

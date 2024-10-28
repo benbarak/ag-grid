@@ -1,4 +1,3 @@
-import type { BeanCollection } from '../context/context';
 import type { AgColumn } from '../entities/agColumn';
 import type { CheckboxSelectionCallback } from '../entities/colDef';
 import type { RowNode } from '../entities/rowNode';
@@ -19,8 +18,6 @@ import { Component, RefPlaceholder } from '../widgets/component';
 export class CheckboxSelectionComponent extends Component {
     private readonly eCheckbox: AgCheckbox = RefPlaceholder;
 
-    private beans: BeanCollection;
-
     private rowNode: RowNode;
     private column: AgColumn | undefined;
     private overrides?: {
@@ -37,10 +34,6 @@ export class CheckboxSelectionComponent extends Component {
             </div>`,
             [AgCheckboxSelector]
         );
-    }
-
-    public wireBeans(beans: BeanCollection): void {
-        this.beans = beans;
     }
 
     public postConstruct(): void {
@@ -76,7 +69,7 @@ export class CheckboxSelectionComponent extends Component {
 
     private onClicked(newValue: boolean, groupSelectsFiltered: boolean | undefined, event: MouseEvent): number {
         return (
-            this.beans.selectionService?.setSelectedParams({
+            this.beans.selectionSvc?.setSelectedParams({
                 rowNode: this.rowNode,
                 newValue,
                 rangeSelect: event.shiftKey,
@@ -131,6 +124,14 @@ export class CheckboxSelectionComponent extends Component {
             rowSelected: this.onSelectionChanged.bind(this),
             dataChanged: this.onDataChanged.bind(this),
             selectableChanged: this.onSelectableChanged.bind(this),
+        });
+
+        this.addManagedPropertyListener('rowSelection', ({ currentValue, previousValue }) => {
+            const curr = typeof currentValue === 'object' ? _getHideDisabledCheckboxes(currentValue) : undefined;
+            const prev = typeof previousValue === 'object' ? _getHideDisabledCheckboxes(previousValue) : undefined;
+            if (curr !== prev) {
+                this.onSelectableChanged();
+            }
         });
 
         const isRowSelectableFunc = _getIsRowSelectable(this.gos);

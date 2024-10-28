@@ -2,6 +2,7 @@ import { BASE_URL } from '../../baseUrl';
 import type { UserComponentName } from '../../context/context';
 import type { Column } from '../../interfaces/iColumn';
 import type { ModuleName } from '../../interfaces/iModule';
+import type { RowNodeEventType } from '../../interfaces/iRowNode';
 import { _fuzzySuggestions } from '../../utils/fuzzyMatch';
 import { getErrorLink } from '../logging';
 
@@ -56,7 +57,8 @@ export const AG_GRID_ERRORS = {
     8: ({ key }: { key: string }) => `Unknown key for navigation ${key}` as const,
     9: ({ variable }: { variable: { cssName: string; defaultValue: number } }) =>
         `No value for ${variable.cssName}. This usually means that the grid has been initialised before styles have been loaded. The default value of ${variable.defaultValue} will be used and updated when styles load.` as const,
-    // 10: () => '',
+    10: ({ eventType }: { eventType: RowNodeEventType }) =>
+        `As of v33, the '${eventType}' event is deprecated. Use the global 'modelUpdated' event to determine when row children have changed.`,
     11: () => 'No gridOptions provided to createGrid' as const,
     12: ({ colKey }: { colKey: string | Column }) => ['column ', colKey, ' not found'] as const,
     13: () =>
@@ -420,8 +422,8 @@ export const AG_GRID_ERRORS = {
     191: () => `cannot multi select unless selection mode is 'multiRow'` as const,
     192: () => `cannot use range selection when multi selecting rows` as const,
     193: () => "cannot multi select unless selection mode is 'multiRow'" as const,
-    194: () =>
-        'calling gridApi.getBestCostNodeSelection() is only possible when using rowModelType=`clientSide`.' as const,
+    194: ({ method }: { method: string }) =>
+        `calling gridApi.${method}() is only possible when using rowModelType=\`clientSide\`.` as const,
     195: ({ justCurrentPage }: { justCurrentPage: boolean | undefined }) =>
         `selecting just ${justCurrentPage ? 'current page' : 'filtered'} only works when gridOptions.rowModelType='clientSide'` as const,
     196: ({ key }: { key: string }) => `Provided ids must be of string type. Invalid id provided: ${key}` as const,
@@ -515,3 +517,20 @@ export function getError<TId extends ErrorId, TParams extends GetErrorParams<TId
     const errorSuffix = `\nSee ${errorLink}`;
     return Array.isArray(errorBody) ? (errorBody.concat(errorSuffix) as string[]) : [errorBody, errorSuffix];
 }
+
+export const MISSING_MODULE_REASONS = {
+    1: 'Charting Aggregation',
+    2: 'the Context Menu key "pivotChart"',
+    3: 'the Context Menu key "chartRange"',
+    4: 'Aggregation from Menu',
+    5: 'Copy from Menu',
+    6: 'Copy with Headers from Menu',
+    7: 'Copy with Group Headers from Menu',
+    8: 'Cut from Menu',
+    9: 'Paste from Clipboard',
+    10: 'pivotResultFields',
+    11: 'Column Tool Panel',
+    12: 'Filters Tool Panel',
+} as const;
+
+export type MissingModuleErrors = typeof MISSING_MODULE_REASONS;

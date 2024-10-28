@@ -7,7 +7,7 @@ import { _exists } from '../../utils/generic';
 import type { CellCtrl } from './cellCtrl';
 
 export class CellFlashService extends BeanStub implements NamedBean {
-    beanName = 'cellFlashService' as const;
+    beanName = 'cellFlashSvc' as const;
 
     public onFlashCells(cellCtrl: CellCtrl, event: FlashCellsEvent): void {
         if (!cellCtrl.getComp()) {
@@ -58,7 +58,7 @@ export class CellFlashService extends BeanStub implements NamedBean {
         const eGui = cellCtrl.getGui();
 
         // then once that is applied, we remove the highlight with animation
-        this.frameworkOverrides.wrapIncoming(() => {
+        this.beans.frameworkOverrides.wrapIncoming(() => {
             window.setTimeout(() => {
                 if (!cellCtrl.isAlive()) {
                     return;

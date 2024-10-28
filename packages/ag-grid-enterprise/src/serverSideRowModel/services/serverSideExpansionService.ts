@@ -3,6 +3,7 @@ import type {
     IExpansionService,
     IsServerSideGroupOpenByDefaultParams,
     NamedBean,
+    RowGroupOpenedEvent,
     RowNode,
     WithoutGridCommon,
 } from 'ag-grid-community';
@@ -11,7 +12,7 @@ import { BaseExpansionService } from '../../expansion/baseExpansionService';
 import type { ServerSideRowModel } from '../serverSideRowModel';
 
 export class ServerSideExpansionService extends BaseExpansionService implements NamedBean, IExpansionService {
-    beanName = 'expansionService' as const;
+    beanName = 'expansionSvc' as const;
 
     private serverSideRowModel: ServerSideRowModel;
 
@@ -75,5 +76,9 @@ export class ServerSideExpansionService extends BaseExpansionService implements 
 
     public onGroupExpandedOrCollapsed(): void {
         // do nothing
+    }
+
+    protected override dispatchExpandedEvent(event: RowGroupOpenedEvent): void {
+        this.eventSvc.dispatchEvent(event);
     }
 }

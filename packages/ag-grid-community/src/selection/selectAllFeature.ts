@@ -2,7 +2,7 @@ import { isColumnSelectionCol } from '../columns/columnUtils';
 import { BeanStub } from '../context/beanStub';
 import type { BeanCollection } from '../context/context';
 import type { AgColumn } from '../entities/agColumn';
-import type { GridOptions, RowSelectionOptions, SelectAllMode } from '../entities/gridOptions';
+import type { SelectAllMode } from '../entities/gridOptions';
 import type { SelectionEventSourceType } from '../events';
 import {
     _getActiveDomElement,
@@ -20,16 +20,15 @@ import { AgCheckbox } from '../widgets/agCheckbox';
 
 export class SelectAllFeature extends BeanStub {
     private rowModel: IRowModel;
-    private selectionService: ISelectionService;
+    private selectionSvc: ISelectionService;
 
     public wireBeans(beans: BeanCollection): void {
         this.rowModel = beans.rowModel;
-        this.selectionService = beans.selectionService!;
+        this.selectionSvc = beans.selectionSvc!;
     }
 
     private cbSelectAllVisible = false;
     private processingEventFromCheckbox = false;
-    private selectionOptions: RowSelectionOptions | undefined;
     private column: AgColumn;
     private headerCellCtrl: HeaderCellCtrl;
 
@@ -38,17 +37,6 @@ export class SelectAllFeature extends BeanStub {
     constructor(column: AgColumn) {
         super();
         this.column = column;
-    }
-
-    public postConstruct() {
-        const setRowSelectionOptions = (rowSelection: GridOptions['rowSelection']) => {
-            if (rowSelection && typeof rowSelection !== 'string') {
-                this.selectionOptions = rowSelection;
-            }
-        };
-
-        setRowSelectionOptions(this.gos.get('rowSelection'));
-        this.addManagedPropertyListener('rowSelection', (e) => setRowSelectionOptions(e.currentValue));
     }
 
     public onSpaceKeyDown(e: KeyboardEvent): void {
@@ -132,10 +120,10 @@ export class SelectAllFeature extends BeanStub {
 
         const selectAllMode = this.getSelectAllMode();
 
-        const allSelected = this.selectionService.getSelectAllState(selectAllMode);
+        const allSelected = this.selectionSvc.getSelectAllState(selectAllMode);
         this.cbSelectAll.setValue(allSelected!);
 
-        const hasNodesToSelect = this.selectionService.hasNodesToSelect(selectAllMode);
+        const hasNodesToSelect = this.selectionSvc.hasNodesToSelect(selectAllMode);
         this.cbSelectAll.setDisabled(!hasNodesToSelect);
 
         this.refreshSelectAllLabel();
@@ -199,9 +187,9 @@ export class SelectAllFeature extends BeanStub {
 
         const params = { source, selectAll };
         if (value) {
-            this.selectionService.selectAllRowNodes(params);
+            this.selectionSvc.selectAllRowNodes(params);
         } else {
-            this.selectionService.deselectAllRowNodes(params);
+            this.selectionSvc.deselectAllRowNodes(params);
         }
     }
 
@@ -210,8 +198,8 @@ export class SelectAllFeature extends BeanStub {
      * or `headerCheckboxSelection` is enabled in the legacy API.
      */
     private isCheckboxSelection(): boolean {
-        const so = this.selectionOptions;
-        const newHeaderCheckbox = so && _getHeaderCheckbox(so) && isColumnSelectionCol(this.column);
+        const so = this.gos.get('rowSelection');
+        const newHeaderCheckbox = typeof so === 'object' && _getHeaderCheckbox(so) && isColumnSelectionCol(this.column);
         const headerCheckboxSelection = this.column.getColDef().headerCheckboxSelection;
 
         let result = false;
@@ -236,8 +224,8 @@ export class SelectAllFeature extends BeanStub {
     }
 
     private getSelectAllMode(): SelectAllMode {
-        const so = this.selectionOptions;
-        if (so) {
+        const so = this.gos.get('rowSelection');
+        if (typeof so === 'object') {
             return (so.mode === 'multiRow' && so.selectAll) || 'all';
         }
         const { headerCheckboxSelectionCurrentPageOnly, headerCheckboxSelectionFilteredOnly } = this.column.getColDef();

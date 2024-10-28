@@ -12,13 +12,11 @@ import type { ITooltipCtrl, TooltipFeature } from './tooltipFeature';
 import { _isShowTooltipWhenTruncated, _shouldDisplayTooltip } from './tooltipFeature';
 
 export class TooltipService extends BeanStub implements NamedBean {
-    beanName = 'tooltipService' as const;
+    beanName = 'tooltipSvc' as const;
 
-    private beans: BeanCollection;
     private registry: Registry;
 
     public wireBeans(beans: BeanCollection): void {
-        this.beans = beans;
         this.registry = beans.registry;
     }
 

@@ -21,13 +21,13 @@ import { DateFilterModelFormatter } from './dateFilterModelFormatter';
 import type { DateFilterModel, DateFilterParams } from './iDateFilter';
 
 export class DateFloatingFilter extends SimpleFloatingFilter {
-    private userComponentFactory: UserComponentFactory;
+    private userCompFactory: UserComponentFactory;
     private context: Context;
 
     public override wireBeans(beans: BeanCollection): void {
         super.wireBeans(beans);
         this.context = beans.context;
-        this.userComponentFactory = beans.userComponentFactory;
+        this.userCompFactory = beans.userCompFactory;
     }
 
     private readonly eReadOnlyText: AgInputTextField = RefPlaceholder;
@@ -134,7 +134,7 @@ export class DateFloatingFilter extends SimpleFloatingFilter {
     private getDateComponentParams(): WithoutGridCommon<IDateParams> {
         const debounceMs = getDebounceMs(this.params.filterParams, this.getDefaultDebounceMs());
         return {
-            onDateChanged: _debounce(this.onDateChanged.bind(this), debounceMs),
+            onDateChanged: _debounce(this, this.onDateChanged.bind(this), debounceMs),
             filterParams: this.params.column.getColDef().filterParams,
             location: 'floatingFilter',
         };
@@ -143,7 +143,7 @@ export class DateFloatingFilter extends SimpleFloatingFilter {
     private createDateComponent(): void {
         this.dateComp = new DateCompWrapper(
             this.context,
-            this.userComponentFactory,
+            this.userCompFactory,
             this.getDateComponentParams(),
             this.eDateWrapper,
             (dateComp) => {

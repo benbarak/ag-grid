@@ -4,6 +4,7 @@ import { baseCommunityModule } from '../interfaces/iModule';
 import type { _ModuleWithApi, _ModuleWithoutApi } from '../interfaces/iModule';
 import { UndoRedoService } from '../undoRedo/undoRedoService';
 import { PopupModule } from '../widgets/popupModule';
+import { cellEditingCSS } from './cell-editing.css-GENERATED';
 import { CheckboxCellEditor } from './cellEditors/checkboxCellEditor';
 import { DateCellEditor } from './cellEditors/dateCellEditor';
 import { DateStringCellEditor } from './cellEditors/dateStringCellEditor';
@@ -28,6 +29,8 @@ export const EditCoreModule: _ModuleWithoutApi = {
     ...baseCommunityModule('EditCoreModule'),
     beans: [EditService],
     dependsOn: [PopupModule],
+
+    css: [cellEditingCSS],
 };
 
 export const EditApiModule: _ModuleWithApi<_EditGridApi<any>> = {
@@ -59,37 +62,37 @@ export const FullRowEditModule: _ModuleWithoutApi = {
 
 export const DefaultEditorModule: _ModuleWithoutApi = {
     ...baseCommunityModule('DefaultEditorModule'),
-    userComponents: [{ name: 'agCellEditor', classImp: TextCellEditor }],
+    userComponents: { agCellEditor: TextCellEditor },
     dependsOn: [EditCoreModule],
 };
 
 export const DataTypeEditorsModule: _ModuleWithoutApi = {
     ...baseCommunityModule('DataTypeEditorsModule'),
-    userComponents: [
-        { name: 'agTextCellEditor', classImp: TextCellEditor },
-        {
-            name: 'agNumberCellEditor',
+    userComponents: {
+        agTextCellEditor: TextCellEditor,
+
+        agNumberCellEditor: {
             classImp: NumberCellEditor,
             params: {
                 suppressPreventDefault: true,
             } as DefaultProvidedCellEditorParams,
         },
-        { name: 'agDateCellEditor', classImp: DateCellEditor },
-        { name: 'agDateStringCellEditor', classImp: DateStringCellEditor },
-        { name: 'agCheckboxCellEditor', classImp: CheckboxCellEditor },
-    ],
+        agDateCellEditor: DateCellEditor,
+        agDateStringCellEditor: DateStringCellEditor,
+        agCheckboxCellEditor: CheckboxCellEditor,
+    },
     dependsOn: [DefaultEditorModule],
 };
 
 export const SelectEditorModule: _ModuleWithoutApi = {
     ...baseCommunityModule('SelectEditorModule'),
-    userComponents: [{ name: 'agSelectCellEditor', classImp: SelectCellEditor }],
+    userComponents: { agSelectCellEditor: SelectCellEditor },
     dependsOn: [EditCoreModule],
 };
 
 export const LargeTextEditorModule: _ModuleWithoutApi = {
     ...baseCommunityModule('LargeTextEditorModule'),
-    userComponents: [{ name: 'agLargeTextCellEditor', classImp: LargeTextCellEditor }],
+    userComponents: { agLargeTextCellEditor: LargeTextCellEditor },
     dependsOn: [EditCoreModule],
 };
 

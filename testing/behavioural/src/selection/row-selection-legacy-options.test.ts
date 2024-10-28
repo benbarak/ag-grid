@@ -28,18 +28,14 @@ describe('Row Selection Legacy Grid Options', () => {
     let consoleErrorSpy: MockInstance;
     let consoleWarnSpy: MockInstance;
 
-    function wait(ms: number): Promise<void> {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
     function createGrid(gridOptions: GridOptions): GridApi {
         return gridMgr.createGrid('myGrid', gridOptions);
     }
 
-    async function createGridAndWait(gridOptions: GridOptions, waitMs = 60): Promise<GridApi> {
+    async function createGridAndWait(gridOptions: GridOptions): Promise<GridApi> {
         const api = createGrid(gridOptions);
-        await wait(waitMs);
-        return api;
+
+        return new Promise((resolve) => api.addEventListener('firstDataRendered', () => resolve(api)));
     }
 
     const gridMgr = new TestGridsManager({
@@ -121,7 +117,7 @@ describe('Row Selection Legacy Grid Options', () => {
                     columnDefs,
                     rowData,
                     rowSelection: 'single',
-                    isRowSelectable: (node) => node.data.sport !== 'football',
+                    isRowSelectable: (node) => node.data?.sport !== 'football',
                 });
 
                 clickRowByIndex(0);
@@ -135,7 +131,7 @@ describe('Row Selection Legacy Grid Options', () => {
                     columnDefs,
                     rowData,
                     rowSelection: 'multiple',
-                    isRowSelectable: (node) => node.data.sport !== 'football',
+                    isRowSelectable: (node) => node.data?.sport !== 'football',
                 });
 
                 clickRowByIndex(0);
@@ -437,7 +433,7 @@ describe('Row Selection Legacy Grid Options', () => {
                     })),
                     rowData,
                     rowSelection: 'multiple',
-                    isRowSelectable: (node) => node.data.sport !== 'golf',
+                    isRowSelectable: (node) => node.data?.sport !== 'golf',
                 });
 
                 toggleCheckboxByIndex(4);
@@ -744,7 +740,7 @@ describe('Row Selection Legacy Grid Options', () => {
                     })),
                     rowData,
                     rowSelection: 'multiple',
-                    isRowSelectable: (node) => node.data.sport !== 'football',
+                    isRowSelectable: (node) => node.data?.sport !== 'football',
                 });
 
                 toggleHeaderCheckboxByIndex(0);
@@ -1083,7 +1079,7 @@ describe('Row Selection Legacy Grid Options', () => {
                 api.selectAllOnCurrentPage();
 
                 assertSelectedRowsByIndex([0, 1, 2, 3, 4], api);
-                expect(consoleWarnSpy).not.toHaveBeenCalled();
+                expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
             });
 
             test('Can deselect only rows on current page in single selection mode', () => {

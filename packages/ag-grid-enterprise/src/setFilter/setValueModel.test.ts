@@ -1,5 +1,4 @@
 import type {
-    FuncColsService,
     GridOptionsService,
     IClientSideRowModel,
     RowNode,
@@ -9,6 +8,7 @@ import type {
 } from 'ag-grid-community';
 import { _makeNull, _toStringOrNull } from 'ag-grid-community';
 
+import type { RowGroupColsSvc } from '../rowGrouping/rowGroupColsSvc';
 import { mock } from '../test-utils/mock';
 import { SetFilterModelValuesType, SetValueModel } from './setValueModel';
 
@@ -67,8 +67,8 @@ function createSetValueModel(opts: Partial<typeof DEFAULT_OPTS> = DEFAULT_OPTS) 
         isRowDataLoaded: () => true,
     } as IClientSideRowModel;
 
-    const valueService = mock<ValueService>('formatValue');
-    valueService.formatValue.mockImplementation((_1, _2, value) => value);
+    const valueSvc = mock<ValueService>('formatValue');
+    valueSvc.formatValue.mockImplementation((_1, _2, value) => value);
 
     const svmParams: SetFilterParams = {
         rowModel,
@@ -85,8 +85,8 @@ function createSetValueModel(opts: Partial<typeof DEFAULT_OPTS> = DEFAULT_OPTS) 
     gos.addGridCommonParams.mockImplementation((params) => params as any);
     gos.get.mockImplementation((prop) => (prop === 'rowModelType' ? 'clientSide' : undefined));
 
-    const funcColsService = mock<FuncColsService>();
-    funcColsService.rowGroupCols = [];
+    const rowGroupColsSvc = mock<RowGroupColsSvc>();
+    rowGroupColsSvc.columns = [];
 
     return new SetValueModel<string>({
         filterParams: svmParams,
@@ -96,9 +96,9 @@ function createSetValueModel(opts: Partial<typeof DEFAULT_OPTS> = DEFAULT_OPTS) 
         createKey: (value) => _makeNull(Array.isArray(value) ? (value as any) : _toStringOrNull(value)!),
         valueFormatter: (params) => _toStringOrNull(params.value)!,
         gos,
-        valueService,
+        valueSvc,
         addManagedEventListeners: () => [],
-        funcColsService,
+        rowGroupColsSvc,
     });
 }
 

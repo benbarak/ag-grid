@@ -1,16 +1,16 @@
-import type { BeanCollection, ColumnModel, ComponentSelector, FuncColsService } from 'ag-grid-community';
+import type { BeanCollection, ColumnModel, ComponentSelector, IColsService } from 'ag-grid-community';
 import { Component, _setAriaRole } from 'ag-grid-community';
 
 import { PivotDropZonePanel } from './pivotDropZonePanel';
 import { RowGroupDropZonePanel } from './rowGroupDropZonePanel';
 
 export class AgGridHeaderDropZones extends Component {
-    private columnModel: ColumnModel;
-    private funcColsService: FuncColsService;
+    private colModel: ColumnModel;
+    private rowGroupColsSvc?: IColsService;
 
     public wireBeans(beans: BeanCollection) {
-        this.columnModel = beans.columnModel;
-        this.funcColsService = beans.funcColsService;
+        this.colModel = beans.colModel;
+        this.rowGroupColsSvc = beans.rowGroupColsSvc;
     }
 
     private rowGroupComp: Component;
@@ -78,7 +78,7 @@ export class AgGridHeaderDropZones extends Component {
         if (rowGroupPanelShow === 'always') {
             this.rowGroupComp.setDisplayed(true);
         } else if (rowGroupPanelShow === 'onlyWhenGrouping') {
-            const grouping = !this.funcColsService.isRowGroupEmpty();
+            const grouping = this.rowGroupColsSvc?.columns?.length !== 0;
             this.rowGroupComp.setDisplayed(grouping);
         } else {
             this.rowGroupComp.setDisplayed(false);
@@ -95,7 +95,7 @@ export class AgGridHeaderDropZones extends Component {
         if (pivotPanelShow === 'always') {
             this.pivotComp.setDisplayed(true);
         } else if (pivotPanelShow === 'onlyWhenPivoting') {
-            const pivoting = this.columnModel.isPivotActive();
+            const pivoting = this.colModel.isPivotActive();
             this.pivotComp.setDisplayed(pivoting);
         } else {
             this.pivotComp.setDisplayed(false);

@@ -3,7 +3,7 @@ import type {
     AgProvidedColumnGroup,
     BeanCollection,
     ColumnModel,
-    FuncColsService,
+    IColsService,
     MenuItemDef,
     MenuService,
     NamedBean,
@@ -35,15 +35,15 @@ export class ColumnMenuFactory extends BeanStub implements NamedBean {
     beanName = 'columnMenuFactory' as const;
 
     private menuItemMapper: MenuItemMapper;
-    private columnModel: ColumnModel;
-    private funcColsService: FuncColsService;
-    private menuService: MenuService;
+    private colModel: ColumnModel;
+    private menuSvc: MenuService;
+    private rowGroupColsSvc?: IColsService;
 
     public wireBeans(beans: BeanCollection) {
         this.menuItemMapper = beans.menuItemMapper as MenuItemMapper;
-        this.columnModel = beans.columnModel;
-        this.funcColsService = beans.funcColsService;
-        this.menuService = beans.menuService!;
+        this.colModel = beans.colModel;
+        this.menuSvc = beans.menuSvc!;
+        this.rowGroupColsSvc = beans.rowGroupColsSvc;
     }
 
     public createMenu(
@@ -122,13 +122,13 @@ export class ColumnMenuFactory extends BeanStub implements NamedBean {
 
         const allowPinning = !column.getColDef().lockPinned;
 
-        const rowGroupCount = this.funcColsService.rowGroupCols.length;
+        const rowGroupCount = this.rowGroupColsSvc?.columns.length ?? 0;
         const doingGrouping = rowGroupCount > 0;
 
         const allowValue = column.isAllowValue();
         const allowRowGroup = column.isAllowRowGroup();
         const isPrimary = column.isPrimary();
-        const pivotModeOn = this.columnModel.isPivotMode();
+        const pivotModeOn = this.colModel.isPivotMode();
 
         const isInMemoryRowModel = _isClientSideRowModel(this.gos);
 
@@ -154,7 +154,7 @@ export class ColumnMenuFactory extends BeanStub implements NamedBean {
             result.push(MENU_ITEM_SEPARATOR);
         }
 
-        if (this.menuService.isFilterMenuItemEnabled(column)) {
+        if (this.menuSvc.isFilterMenuItemEnabled(column)) {
             result.push('columnFilter');
             result.push(MENU_ITEM_SEPARATOR);
         }
@@ -180,7 +180,7 @@ export class ColumnMenuFactory extends BeanStub implements NamedBean {
             result.push('rowUnGroup');
         } else if (allowRowGroup && column.isPrimary()) {
             if (column.isRowGroupActive()) {
-                const groupLocked = isRowGroupColLocked(this.funcColsService, this.gos, column);
+                const groupLocked = isRowGroupColLocked(column, this.beans);
                 if (!groupLocked) {
                     result.push('rowUnGroup');
                 }

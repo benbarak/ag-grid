@@ -11,7 +11,6 @@ export class CellCustomStyleFeature extends BeanStub {
     private readonly cellCtrl: CellCtrl;
     private readonly column: AgColumn;
     private readonly rowNode: RowNode;
-    private readonly beans: BeanCollection;
     private staticClasses: string[] = [];
 
     private cellComp: ICellComp;
@@ -49,7 +48,7 @@ export class CellCustomStyleFeature extends BeanStub {
         });
 
         processClassRules(
-            this.beans.expressionService,
+            this.beans.expressionSvc,
             // if current was previous, skip
             cellClassRules === this.cellClassRules ? undefined : this.cellClassRules,
             cellClassRules,
@@ -104,7 +103,7 @@ export class CellCustomStyleFeature extends BeanStub {
             this.staticClasses.forEach((className) => this.cellComp.addOrRemoveCssClass(className, false));
         }
 
-        this.staticClasses = this.beans.cellStyleService!.getStaticCellClasses(colDef, cellClassParams);
+        this.staticClasses = this.beans.cellStyles!.getStaticCellClasses(colDef, cellClassParams);
 
         if (this.staticClasses.length) {
             this.staticClasses.forEach((className) => this.cellComp.addOrRemoveCssClass(className, true));

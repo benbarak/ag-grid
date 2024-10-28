@@ -10,9 +10,7 @@ import type {
     PropertyValueChangedListener,
 } from '../gridOptionsService';
 import type { IEventEmitter } from '../interfaces/iEventEmitter';
-import type { IFrameworkOverrides } from '../interfaces/iFrameworkOverrides';
 import { LocalEventService } from '../localEventService';
-import type { LocaleService } from '../misc/locale/localeService';
 import type { LocaleTextFunc } from '../misc/locale/localeUtils';
 import { _getLocaleTextFunc } from '../misc/locale/localeUtils';
 import { _addSafePassiveEventListener } from '../utils/event';
@@ -40,17 +38,15 @@ export abstract class BeanStub<TEventType extends string = BeanStubEvent>
     // prevents vue from creating proxies for created objects and prevents identity related issues
     public __v_skip = true;
 
-    protected frameworkOverrides: IFrameworkOverrides;
-    protected eventService: EventService;
+    protected beans: BeanCollection;
+    protected eventSvc: EventService;
     protected gos: GridOptionsService;
-    private localeService?: LocaleService;
 
     public preWireBeans(beans: BeanCollection): void {
-        this.frameworkOverrides = beans.frameworkOverrides;
+        this.beans = beans;
         this.stubContext = beans.context;
-        this.eventService = beans.eventService;
+        this.eventSvc = beans.eventSvc;
         this.gos = beans.gos;
-        this.localeService = beans.localeService;
     }
 
     // this was a test constructor niall built, when active, it prints after 5 seconds all beans/components that are
@@ -68,11 +64,6 @@ export abstract class BeanStub<TEventType extends string = BeanStubEvent>
     //     }, 5000);
     // }
 
-    // CellComp and GridComp and override this because they get the FrameworkOverrides from the Beans bean
-    protected getFrameworkOverrides(): IFrameworkOverrides {
-        return this.frameworkOverrides;
-    }
-
     public destroy(): void {
         for (let i = 0; i < this.destroyFunctions.length; i++) {
             this.destroyFunctions[i]();
@@ -86,7 +77,7 @@ export abstract class BeanStub<TEventType extends string = BeanStubEvent>
     }
 
     // The typing of AgEventListener<any, any, any> is not ideal, but it's the best we can do at the moment to enable
-    // eventService to have the best typing at the expense of BeanStub local events
+    // eventSvc to have the best typing at the expense of BeanStub local events
     /** Add a local event listener against this BeanStub */
     public addEventListener<T extends TEventType>(
         eventType: T,
@@ -123,7 +114,7 @@ export abstract class BeanStub<TEventType extends string = BeanStubEvent>
         return this._setupListeners<keyof HTMLElementEventMap>(object, handlers);
     }
     public addManagedEventListeners(handlers: AgEventHandlers) {
-        return this._setupListeners<AgEventType>(this.eventService, handlers);
+        return this._setupListeners<AgEventType>(this.eventSvc, handlers);
     }
     public addManagedListeners<TEvent extends string>(object: IEventEmitter<TEvent>, handlers: EventHandlers<TEvent>) {
         return this._setupListeners<TEvent>(object, handlers);
@@ -153,7 +144,7 @@ export abstract class BeanStub<TEventType extends string = BeanStubEvent>
         }
 
         if (object instanceof HTMLElement) {
-            _addSafePassiveEventListener(this.getFrameworkOverrides(), object, event, listener);
+            _addSafePassiveEventListener(this.beans.frameworkOverrides, object, event, listener);
         } else {
             object.addEventListener(event, listener);
         }
@@ -259,7 +250,7 @@ export abstract class BeanStub<TEventType extends string = BeanStubEvent>
     public isAlive = (): boolean => !this.destroyed;
 
     public getLocaleTextFunc(): LocaleTextFunc {
-        return _getLocaleTextFunc(this.localeService);
+        return _getLocaleTextFunc(this.beans.localeSvc);
     }
 
     public addDestroyFunc(func: () => void): void {

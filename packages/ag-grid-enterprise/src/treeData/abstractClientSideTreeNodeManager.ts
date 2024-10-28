@@ -23,7 +23,8 @@ import {
     setTreeRowUpdated,
 } from './treeRow';
 
-interface TreeCommitDetails {
+interface TreeCommitDetails<TData = any> {
+    rootNode: AbstractClientSideNodeManager.RootNode<TData>;
     changedPath: ChangedPath | undefined;
     treeData: boolean;
     expandByDefault: number;
@@ -69,7 +70,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
     private rowsPendingDestruction: Set<TreeRow> | null = null;
 
     /** The root node of the tree. */
-    public treeRoot: TreeNode = new TreeNode(null, '', -1);
+    public treeRoot: TreeNode | null = null;
 
     public override get treeData(): boolean {
         return this.gos.get('treeData');
@@ -77,7 +78,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
 
     public override activate(rootNode: RowNode<TData>): void {
         super.activate(rootNode);
-        this.treeRoot.setRow(rootNode);
+        (this.treeRoot ??= new TreeNode(null, '', -1)).setRow(rootNode);
     }
 
     public override destroy(): void {
@@ -91,12 +92,14 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
 
     public override deactivate(): void {
         const treeRoot = this.treeRoot;
-        const rootRow = treeRoot.row;
-        if (rootRow !== null) {
-            treeRoot.removeRow(rootRow);
-            clearTreeRowFlags(rootRow);
+        if (treeRoot) {
+            const rootRow = treeRoot.row;
+            if (rootRow !== null) {
+                treeRoot.removeRow(rootRow);
+                clearTreeRowFlags(rootRow);
+            }
+            this.treeDestroy(treeRoot);
         }
-        this.treeDestroy(treeRoot);
         this.commitDestroyedRows();
 
         super.deactivate();
@@ -104,9 +107,10 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
 
     /** Called by ClientSideRowModel if group data need to be recomputed due to group columns change */
     public afterColumnsChanged(): void {
-        if (this.gos.get('treeData')) {
+        const rootNode = this.rootNode;
+        if (rootNode && this.gos.get('treeData')) {
             const newGroupDisplayColIds =
-                this.beans.showRowGroupColsService
+                this.beans.showRowGroupCols
                     ?.getShowRowGroupCols()
                     ?.map((c) => c.getId())
                     .join('-') ?? '';
@@ -116,7 +120,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
             if (this.oldGroupDisplayColIds !== newGroupDisplayColIds) {
                 this.oldGroupDisplayColIds = newGroupDisplayColIds;
 
-                this.checkAllGroupDataAfterColsChanged(this.rootNode.childrenAfterGroup);
+                this.checkAllGroupDataAfterColsChanged(rootNode.childrenAfterGroup);
             }
         } else {
             this.oldGroupDisplayColIds = '';
@@ -206,27 +210,31 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
 
     /** Commit the changes performed to the tree */
     protected treeCommit(changedPath?: ChangedPath): void {
-        const root = this.treeRoot;
+        const { treeRoot, rootNode } = this;
+        if (!treeRoot || !rootNode) {
+            return;
+        }
 
         const treeData = this.gos.get('treeData');
 
-        const details: TreeCommitDetails = {
+        const details: TreeCommitDetails<TData> = {
+            rootNode,
             changedPath,
             treeData,
             expandByDefault: this.gos.get('groupDefaultExpanded'),
             isGroupOpenByDefault: this.gos.getCallback('isGroupOpenByDefault'),
         };
 
-        this.treeCommitChildren(details, root);
+        this.treeCommitChildren(details, treeRoot);
 
-        const rootRow = root.row;
+        const rootRow = treeRoot.row;
         if (rootRow) {
             if (treeData) {
                 rootRow.leafGroup = false; // no pivoting with tree data
             }
 
-            if (root.childrenChanged) {
-                if (root.updateChildrenAfterGroup(treeData)) {
+            if (treeRoot.childrenChanged) {
+                if (treeRoot.updateChildrenAfterGroup(treeData)) {
                     markTreeRowPathChanged(rootRow);
                 }
             }
@@ -244,7 +252,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
 
         this.commitDestroyedRows();
 
-        this.beans.selectionService?.updateSelectableAfterGrouping(changedPath);
+        this.beans.selectionSvc?.updateSelectableAfterGrouping(changedPath);
     }
 
     /** Calls commitChild for each invalidated child, recursively. We commit only the invalidated paths. */
@@ -275,7 +283,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
         this.treeCommitPostOrder(details, parent, node);
     }
 
-    private treeCommitPreOrder({ treeData }: TreeCommitDetails, parent: TreeNode, node: TreeNode): void {
+    private treeCommitPreOrder(details: TreeCommitDetails, parent: TreeNode, node: TreeNode): void {
         let row = node.row;
 
         if (row === null) {
@@ -289,7 +297,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
             }
         }
 
-        if (treeData) {
+        if (details.treeData) {
             row.parent = parent.row;
             if (node.oldRow !== row) {
                 // We need to update children rows parents, as the row changed
@@ -310,7 +318,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
                 this.setGroupData(row, key);
             }
         } else {
-            row.parent = this.treeRoot.row;
+            row.parent = details.rootNode;
         }
     }
 
@@ -386,7 +394,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
             if (treeData && details.changedPath?.isActive()) {
                 details.changedPath.addParentNode(row);
             } else {
-                markTreeRowPathChanged(this.treeRoot.row!);
+                markTreeRowPathChanged(details.rootNode);
             }
         }
 
@@ -430,7 +438,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
     private setGroupData(row: RowNode, key: string): void {
         const groupData: Record<string, string> = {};
         row.groupData = groupData;
-        const groupDisplayCols = this.beans.showRowGroupColsService?.getShowRowGroupCols();
+        const groupDisplayCols = this.beans.showRowGroupCols?.getShowRowGroupCols();
         if (groupDisplayCols) {
             for (const col of groupDisplayCols) {
                 // newGroup.rowGroupColumn=null when working off GroupInfo, and we always display the group in the group column
@@ -517,7 +525,7 @@ export abstract class AbstractClientSideTreeNodeManager<TData> extends AbstractC
         if (!row.data && row.isSelected()) {
             //we remove selection on filler nodes here, as the selection would not be removed
             // from the RowNodeManager, as filler nodes don't exist on the RowNodeManager
-            this.beans.selectionService?.setSelectedParams({
+            this.beans.selectionSvc?.setSelectedParams({
                 rowNode: row,
                 newValue: false,
                 source: 'rowGroupChanged',

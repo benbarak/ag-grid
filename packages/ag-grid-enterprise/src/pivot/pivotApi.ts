@@ -1,7 +1,7 @@
 import type { BeanCollection, ColDef, ColGroupDef, Column } from 'ag-grid-community';
 
 export function isPivotMode(beans: BeanCollection): boolean {
-    return beans.columnModel.isPivotMode();
+    return beans.colModel.isPivotMode();
 }
 
 export function getPivotResultColumn<TValue = any, TData = any>(
@@ -9,46 +9,46 @@ export function getPivotResultColumn<TValue = any, TData = any>(
     pivotKeys: string[],
     valueColKey: string | ColDef<TData, TValue> | Column<TValue>
 ): Column<TValue> | null {
-    return beans.pivotResultColsService?.lookupPivotResultCol(pivotKeys, valueColKey) ?? null;
+    return beans.pivotResultCols?.lookupPivotResultCol(pivotKeys, valueColKey) ?? null;
 }
 
 export function setValueColumns(beans: BeanCollection, colKeys: (string | ColDef | Column)[]): void {
-    beans.funcColsService.setValueColumns(colKeys, 'api');
+    beans.valueColsSvc?.setColumns(colKeys, 'api');
 }
 
 export function getValueColumns(beans: BeanCollection): Column[] {
-    return beans.funcColsService.valueCols;
+    return beans.valueColsSvc?.columns ?? [];
 }
 
 export function removeValueColumns(beans: BeanCollection, colKeys: (string | ColDef | Column)[]): void {
-    beans.funcColsService.removeValueColumns(colKeys, 'api');
+    beans.valueColsSvc?.removeColumns(colKeys, 'api');
 }
 
 export function addValueColumns(beans: BeanCollection, colKeys: (string | ColDef | Column)[]): void {
-    beans.funcColsService.addValueColumns(colKeys, 'api');
+    beans.valueColsSvc?.addColumns(colKeys, 'api');
 }
 
 export function setPivotColumns(beans: BeanCollection, colKeys: (string | ColDef | Column)[]): void {
-    beans.funcColsService.setPivotColumns(colKeys, 'api');
+    beans.pivotColsSvc?.setColumns(colKeys, 'api');
 }
 
 export function removePivotColumns(beans: BeanCollection, colKeys: (string | ColDef | Column)[]): void {
-    beans.funcColsService.removePivotColumns(colKeys, 'api');
+    beans.pivotColsSvc?.removeColumns(colKeys, 'api');
 }
 
 export function addPivotColumns(beans: BeanCollection, colKeys: (string | ColDef | Column)[]): void {
-    beans.funcColsService.addPivotColumns(colKeys, 'api');
+    beans.pivotColsSvc?.addColumns(colKeys, 'api');
 }
 
 export function getPivotColumns(beans: BeanCollection): Column[] {
-    return beans.funcColsService.pivotCols;
+    return beans.pivotColsSvc?.columns ?? [];
 }
 
 export function setPivotResultColumns(beans: BeanCollection, colDefs: (ColDef | ColGroupDef)[] | null): void {
-    beans.pivotResultColsService?.setPivotResultCols(colDefs, 'api');
+    beans.pivotResultCols?.setPivotResultCols(colDefs, 'api');
 }
 
 export function getPivotResultColumns(beans: BeanCollection): Column[] | null {
-    const pivotResultCols = beans.pivotResultColsService?.getPivotResultCols();
+    const pivotResultCols = beans.pivotResultCols?.getPivotResultCols();
     return pivotResultCols ? pivotResultCols.list : null;
 }

@@ -14,13 +14,11 @@ export class ViewportRowModel extends BeanStub implements NamedBean, IRowModel {
     beanName = 'rowModel' as const;
 
     private rowRenderer: RowRenderer;
-    private focusService: FocusService;
-    private beans: BeanCollection;
+    private focusSvc: FocusService;
 
     public wireBeans(beans: BeanCollection) {
         this.rowRenderer = beans.rowRenderer;
-        this.focusService = beans.focusService;
-        this.beans = beans;
+        this.focusSvc = beans.focusSvc;
     }
 
     // rowRenderer tells us these
@@ -35,10 +33,10 @@ export class ViewportRowModel extends BeanStub implements NamedBean, IRowModel {
 
     // we don't implement as lazy row heights is not supported in this row model
     public ensureRowHeightsValid(
-        startPixel: number,
-        endPixel: number,
-        startLimitIndex: number,
-        endLimitIndex: number
+        _startPixel: number,
+        _endPixel: number,
+        _startLimitIndex: number,
+        _endLimitIndex: number
     ): boolean {
         return false;
     }
@@ -149,7 +147,7 @@ export class ViewportRowModel extends BeanStub implements NamedBean, IRowModel {
     }
 
     private isRowFocused(rowIndex: number): boolean {
-        const focusedCell = this.focusService.getFocusCellToUseAfterRefresh();
+        const focusedCell = this.focusSvc.getFocusCellToUseAfterRefresh();
         if (!focusedCell) {
             return false;
         }
@@ -226,7 +224,7 @@ export class ViewportRowModel extends BeanStub implements NamedBean, IRowModel {
             node.setRowTop(this.rowHeight * node.rowIndex!);
         });
 
-        this.eventService.dispatchEvent({
+        this.eventSvc.dispatchEvent({
             type: 'modelUpdated',
             newData: false,
             newPage: false,
@@ -326,11 +324,11 @@ export class ViewportRowModel extends BeanStub implements NamedBean, IRowModel {
 
         this.rowCount = rowCount;
 
-        this.eventService.dispatchEventOnce({
+        this.eventSvc.dispatchEventOnce({
             type: 'rowCountReady',
         });
 
-        this.eventService.dispatchEvent({
+        this.eventSvc.dispatchEvent({
             type: 'modelUpdated',
             newData: false,
             newPage: false,

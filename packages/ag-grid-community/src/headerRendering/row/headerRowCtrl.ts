@@ -1,6 +1,5 @@
 import { setupCompBean } from '../../components/emptyBean';
 import { BeanStub } from '../../context/beanStub';
-import type { BeanCollection } from '../../context/context';
 import type { AgColumn } from '../../entities/agColumn';
 import type { AgColumnGroup } from '../../entities/agColumnGroup';
 import { _isDomLayout } from '../../gridOptionsUtils';
@@ -24,11 +23,6 @@ let instanceIdSequence = 0;
 export type HeaderRowCtrlInstanceId = BrandedType<number, 'HeaderRowCtrlInstanceId'>;
 
 export class HeaderRowCtrl extends BeanStub {
-    private beans: BeanCollection;
-
-    public wireBeans(beans: BeanCollection): void {
-        this.beans = beans;
-    }
     public readonly instanceId: HeaderRowCtrlInstanceId = instanceIdSequence++ as HeaderRowCtrlInstanceId;
 
     private comp: IHeaderRowComp;
@@ -159,7 +153,7 @@ export class HeaderRowCtrl extends BeanStub {
     }
 
     private getWidthForRow(): number {
-        const { visibleColsService: presentedColsService } = this.beans;
+        const { visibleCols: presentedColsService } = this.beans;
         if (this.isPrintLayout) {
             const pinned = this.pinned != null;
             if (pinned) {
@@ -234,13 +228,13 @@ export class HeaderRowCtrl extends BeanStub {
 
         // we want to keep columns that are focused, otherwise keyboard navigation breaks
         const isFocusedAndDisplayed = (ctrl: HeaderCellCtrl) => {
-            const { focusService, visibleColsService: visibleColsService } = this.beans;
+            const { focusSvc, visibleCols: visibleCols } = this.beans;
 
-            const isFocused = focusService.isHeaderWrapperFocused(ctrl);
+            const isFocused = focusSvc.isHeaderWrapperFocused(ctrl);
             if (!isFocused) {
                 return false;
             }
-            const isDisplayed = visibleColsService.isVisible(ctrl.getColumnGroupChild());
+            const isDisplayed = visibleCols.isVisible(ctrl.getColumnGroupChild());
             return isDisplayed;
         };
 
@@ -303,7 +297,6 @@ export class HeaderRowCtrl extends BeanStub {
                         this.beans.registry.createDynamicBean<HeaderFilterCellCtrl>(
                             'headerFilterCellCtrl',
                             headerColumn as AgColumn,
-                            this.beans,
                             this
                         )!
                     );
@@ -314,13 +307,12 @@ export class HeaderRowCtrl extends BeanStub {
                         this.beans.registry.createDynamicBean<HeaderGroupCellCtrl>(
                             'headerGroupCellCtrl',
                             headerColumn as AgColumnGroup,
-                            this.beans,
                             this
                         )!
                     );
                     break;
                 default:
-                    headerCtrl = this.createBean(new HeaderCellCtrl(headerColumn as AgColumn, this.beans, this));
+                    headerCtrl = this.createBean(new HeaderCellCtrl(headerColumn as AgColumn, this));
                     break;
             }
         }
@@ -340,10 +332,10 @@ export class HeaderRowCtrl extends BeanStub {
 
         let viewportColumns: (AgColumn | AgColumnGroup)[] = [];
         const actualDepth = this.getActualDepth();
-        const { columnViewportService } = this.beans;
+        const { colViewport } = this.beans;
 
         (['left', null, 'right'] as ColumnPinnedType[]).forEach((pinned) => {
-            const items = columnViewportService.getHeadersToRender(pinned, actualDepth);
+            const items = colViewport.getHeadersToRender(pinned, actualDepth);
             viewportColumns = viewportColumns.concat(items);
         });
 
@@ -356,7 +348,7 @@ export class HeaderRowCtrl extends BeanStub {
 
     private getColumnsInViewportNormalLayout(): (AgColumn | AgColumnGroup)[] {
         // when in normal layout, we add the columns for that container only
-        return this.beans.columnViewportService.getHeadersToRender(this.pinned, this.getActualDepth());
+        return this.beans.colViewport.getHeadersToRender(this.pinned, this.getActualDepth());
     }
 
     public findHeaderCellCtrl(

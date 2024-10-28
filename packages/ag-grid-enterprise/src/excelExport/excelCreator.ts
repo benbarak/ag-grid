@@ -10,8 +10,7 @@ import type {
     ExcelFactoryMode,
     ExcelRow,
     ExcelStyle,
-    FuncColsService,
-    GridSerializer,
+    IColsService,
     IExcelCreator,
     NamedBean,
     ValueService,
@@ -252,29 +251,18 @@ export class ExcelCreator
 {
     beanName = 'excelCreator' as const;
 
-    private columnModel: ColumnModel;
-    private columnNameService: ColumnNameService;
-    private funcColsService: FuncColsService;
-    private valueService: ValueService;
-    private cellStyleService?: CellStyleService;
-
-    private gridSerializer: GridSerializer;
+    private colModel: ColumnModel;
+    private colNames: ColumnNameService;
+    private rowGroupColsSvc?: IColsService;
+    private valueSvc: ValueService;
+    private cellStyles?: CellStyleService;
 
     public wireBeans(beans: BeanCollection) {
-        this.columnModel = beans.columnModel;
-        this.columnNameService = beans.columnNameService;
-        this.funcColsService = beans.funcColsService;
-        this.valueService = beans.valueService;
-        this.cellStyleService = beans.cellStyleService;
-        this.gridSerializer = beans.gridSerializer as GridSerializer;
-        this.gos = beans.gos;
-    }
-
-    public postConstruct(): void {
-        this.setBeans({
-            gridSerializer: this.gridSerializer,
-            gos: this.gos,
-        });
+        this.colModel = beans.colModel;
+        this.colNames = beans.colNames;
+        this.rowGroupColsSvc = beans.rowGroupColsSvc;
+        this.valueSvc = beans.valueSvc;
+        this.cellStyles = beans.cellStyles;
     }
 
     protected getMergedParams(params?: ExcelExportParams): ExcelExportParams {
@@ -353,14 +341,14 @@ export class ExcelCreator
     }
 
     public createSerializingSession(params: ExcelExportParams): ExcelSerializingSession {
-        const { columnModel, columnNameService, funcColsService, valueService, gos } = this;
+        const { colModel, colNames, rowGroupColsSvc, valueSvc, gos } = this;
 
         const config: ExcelGridSerializingParams = {
             ...params,
-            columnModel,
-            columnNameService,
-            funcColsService,
-            valueService,
+            colModel,
+            colNames,
+            rowGroupColsSvc,
+            valueSvc,
             gos,
             suppressRowOutline: params.suppressRowOutline || params.skipRowGroups,
             headerRowHeight: params.headerRowHeight || params.rowHeight,
@@ -412,7 +400,7 @@ export class ExcelCreator
         });
 
         const colDef = (column as AgColumn).getDefinition();
-        this.cellStyleService?.processAllCellClasses(
+        this.cellStyles?.processAllCellClasses(
             colDef,
             this.gos.addGridCommonParams({
                 value,

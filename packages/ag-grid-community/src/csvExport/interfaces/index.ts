@@ -1,6 +1,5 @@
 import type { ColumnModel } from '../../columns/columnModel';
 import type { ColumnNameService } from '../../columns/columnNameService';
-import type { FuncColsService } from '../../columns/funcColsService';
 import type { AgColumn } from '../../entities/agColumn';
 import type { RowNode } from '../../entities/rowNode';
 import type { GridOptionsService } from '../../gridOptionsService';
@@ -10,6 +9,7 @@ import type {
     ProcessHeaderForExportParams,
     ProcessRowGroupForExportParams,
 } from '../../interfaces/exportParams';
+import type { IColsService } from '../../interfaces/iColsService';
 import type { ColumnGroup } from '../../interfaces/iColumn';
 import type { ValueService } from '../../valueService/valueService';
 import type { GridSerializer } from '../gridSerializer';
@@ -34,10 +34,10 @@ export interface RowSpanningAccumulator {
 }
 
 export interface GridSerializingParams {
-    columnModel: ColumnModel;
-    funcColsService: FuncColsService;
-    columnNameService: ColumnNameService;
-    valueService: ValueService;
+    colModel: ColumnModel;
+    rowGroupColsSvc?: IColsService;
+    colNames: ColumnNameService;
+    valueSvc: ValueService;
     gos: GridOptionsService;
     processCellCallback?: (params: ProcessCellForExportParams) => string;
     processHeaderCallback?: (params: ProcessHeaderForExportParams) => string;

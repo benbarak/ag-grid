@@ -1,20 +1,33 @@
-import type { BeanCollection, ICellRenderer, ISparklineCellRendererParams } from 'ag-grid-community';
-import { Component, RefPlaceholder, _observeResize } from 'ag-grid-community';
+import { AgCharts, _Util } from 'ag-charts-community';
+import type { AgChartInstance, AgSparklineOptions } from 'ag-charts-community';
 
-import type { SparklineFactoryOptions } from './agSparkline';
-import { createAgSparkline } from './agSparkline';
-import type { SparklineTooltipSingleton } from './tooltip/sparklineTooltipSingleton';
+import type { ICellRenderer, ISparklineCellRendererParams } from 'ag-grid-community';
+import { Component, RefPlaceholder, _debounce, _observeResize } from 'ag-grid-community';
+
+const defaultSparklineOptions = {
+    yAxis: {
+        gridLine: { enabled: false },
+    },
+    background: { visible: false },
+    minHeight: 0,
+    minWidth: 0,
+} as AgSparklineOptions;
 
 export class SparklineCellRenderer extends Component implements ICellRenderer {
-    private sparklineTooltipSingleton!: SparklineTooltipSingleton;
-
-    public wireBeans(beans: BeanCollection) {
-        this.sparklineTooltipSingleton = beans.sparklineTooltipSingleton as SparklineTooltipSingleton;
-    }
-
     private readonly eSparkline: HTMLElement = RefPlaceholder;
 
-    private sparkline?: any;
+    private sparklineInstance?: AgChartInstance<any>;
+    private sparklineOptions: AgSparklineOptions;
+
+    private readonly sparklineUpdateDebounceMs = 10;
+
+    private debouncedUpdate: (...args: any[]) => void = _debounce(
+        this,
+        () => {
+            this.sparklineInstance?.updateDelta(this.sparklineOptions);
+        },
+        this.sparklineUpdateDebounceMs
+    );
 
     constructor() {
         super(/* html */ `<div class="ag-sparkline-wrapper">
@@ -24,55 +37,63 @@ export class SparklineCellRenderer extends Component implements ICellRenderer {
 
     public init(params: ISparklineCellRendererParams): void {
         let firstTimeIn = true;
+
         const updateSparkline = () => {
-            const { clientWidth, clientHeight } = this.getGui();
-            if (clientWidth === 0 || clientHeight === 0) {
+            const { clientWidth: width, clientHeight: height } = this.getGui();
+            if (width === 0 || height === 0 || !params.sparklineOptions) {
                 return;
             }
 
             if (firstTimeIn) {
-                const options: SparklineFactoryOptions = {
-                    data: params.value,
-                    width: clientWidth,
-                    height: clientHeight,
-                    context: {
-                        data: params.data,
-                    },
-                    ...params.sparklineOptions,
-                };
+                this.sparklineOptions = {
+                    container: this.eSparkline,
+                    ...defaultSparklineOptions,
+                    ...this.prepareSparklineOptions(params),
+                    width,
+                    height,
+                } as AgSparklineOptions;
 
                 // create new instance of sparkline
-                this.sparkline = createAgSparkline(options, this.sparklineTooltipSingleton.getSparklineTooltip());
-
-                // append sparkline canvas to cell renderer element
-                this.eSparkline!.appendChild(this.sparkline.canvasElement);
+                this.sparklineInstance = AgCharts.__createSparkline(this.sparklineOptions as AgSparklineOptions);
 
                 firstTimeIn = false;
             } else {
-                this.sparkline.width = clientWidth;
-                this.sparkline.height = clientHeight;
+                this.sparklineOptions.width = width;
+                this.sparklineOptions.height = height;
             }
+            this.debouncedUpdate();
         };
 
         const unsubscribeFromResize = _observeResize(this.gos, this.getGui(), updateSparkline);
         this.addDestroyFunc(() => unsubscribeFromResize());
     }
 
+    private prepareSparklineOptions(params: ISparklineCellRendererParams): AgSparklineOptions {
+        const sparklineOptions = {
+            ...params.sparklineOptions,
+        } as AgSparklineOptions;
+
+        if (!sparklineOptions?.xKey || !sparklineOptions?.yKey || _Util.isNumber(!sparklineOptions?.data?.[0])) {
+            sparklineOptions.data = params.value.map((y: number, x: number) => ({ x, y }));
+            sparklineOptions.xKey = 'x';
+            sparklineOptions.yKey = 'y';
+        }
+
+        return sparklineOptions;
+    }
+
     public refresh(params: ISparklineCellRendererParams): boolean {
-        if (this.sparkline) {
-            this.sparkline.data = params.value;
-            this.sparkline.context = {
-                data: params.data,
-            };
+        if (this.sparklineInstance && params.sparklineOptions) {
+            this.sparklineOptions = this.prepareSparklineOptions(params);
+
+            this.debouncedUpdate();
             return true;
         }
         return false;
     }
 
     public override destroy() {
-        if (this.sparkline) {
-            this.sparkline.destroy();
-        }
+        this.sparklineInstance?.destroy();
         super.destroy();
     }
 }

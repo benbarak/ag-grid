@@ -1,24 +1,17 @@
-import { AgCharts, _Util } from 'ag-charts-community';
+import { _Util } from 'ag-charts-community';
 import type { AgChartInstance, AgSparklineOptions } from 'ag-charts-community';
 
-import type { ICellRenderer, ISparklineCellRendererParams } from 'ag-grid-community';
+import type { BeanCollection, ICellRenderer, ISparklineCellRendererParams } from 'ag-grid-community';
 import { Component, RefPlaceholder, _debounce, _observeResize } from 'ag-grid-community';
 
-const defaultSparklineOptions = {
-    yAxis: {
-        gridLine: { enabled: false },
-    },
-    background: { visible: false },
-    minHeight: 0,
-    minWidth: 0,
-} as AgSparklineOptions;
+import type { SparklinePoolSvc } from './sparklinePoolSvc';
 
 export class SparklineCellRenderer extends Component implements ICellRenderer {
     private readonly eSparkline: HTMLElement = RefPlaceholder;
 
     private sparklineInstance?: AgChartInstance<any>;
     private sparklineOptions: AgSparklineOptions;
-
+    private sparklinePoolSvc: SparklinePoolSvc;
     private readonly sparklineUpdateDebounceMs = 10;
 
     private debouncedUpdate: (...args: any[]) => void = _debounce(
@@ -35,6 +28,10 @@ export class SparklineCellRenderer extends Component implements ICellRenderer {
         </div>`);
     }
 
+    public wireBeans(beans: BeanCollection): void {
+        this.sparklinePoolSvc = beans.sparklinePoolSvc as SparklinePoolSvc;
+    }
+
     public init(params: ISparklineCellRendererParams): void {
         let firstTimeIn = true;
 
@@ -47,14 +44,13 @@ export class SparklineCellRenderer extends Component implements ICellRenderer {
             if (firstTimeIn) {
                 this.sparklineOptions = {
                     container: this.eSparkline,
-                    ...defaultSparklineOptions,
                     ...this.prepareSparklineOptions(params),
                     width,
                     height,
                 } as AgSparklineOptions;
 
-                // create new instance of sparkline
-                this.sparklineInstance = AgCharts.__createSparkline(this.sparklineOptions as AgSparklineOptions);
+                // create new instance of sparkline if needed
+                this.sparklineInstance = this.sparklinePoolSvc.getOrCreate(this.sparklineOptions as AgSparklineOptions);
 
                 firstTimeIn = false;
             } else {
@@ -93,7 +89,7 @@ export class SparklineCellRenderer extends Component implements ICellRenderer {
     }
 
     public override destroy() {
-        this.sparklineInstance?.destroy();
+        this.sparklinePoolSvc.release(this.sparklineInstance!);
         super.destroy();
     }
 }

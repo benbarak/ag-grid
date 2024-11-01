@@ -10,6 +10,8 @@ ModuleRegistry.registerModules([ClientSideRowModelModule, SparklinesModule]);
 
 let gridApi: GridApi;
 
+// (window as any)['sparklinePoolSize'] = 30;
+
 const gridOptions: GridOptions = {
     columnDefs: [
         { field: 'symbol', maxWidth: 120 },

@@ -472,6 +472,7 @@ export type BeanName =
     | 'sideBar'
     | 'sortSvc'
     | 'sortStage'
+    | 'sparklinePoolSvc'
     | 'ssrmBlockUtils'
     | 'ssrmExpandListener'
     | 'ssrmFilterListener'
